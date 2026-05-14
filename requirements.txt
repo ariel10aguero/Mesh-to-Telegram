@@ -1,0 +1,9 @@
+# Runtime (GUI + headless bridge)
+meshtastic>=2.4,<3
+pyTelegramBotAPI>=4.14
+pypubsub>=4.0.0
+pyserial>=3.5
+platformdirs>=4.2.0
+
+# Frozen executable (optional for runtime-only installs)
+pyinstaller>=6.0

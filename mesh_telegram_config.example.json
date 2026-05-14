@@ -1,0 +1,7 @@
+{
+  "transport": "tcp",
+  "host": "192.168.0.226",
+  "serial_dev": "",
+  "telegram_token": "YOUR_BOT_TOKEN",
+  "telegram_chat_id": -1001234567890
+}

@@ -1,0 +1,24 @@
+# Virtual environment (this repo may use in-tree venv)
+bin/
+lib/
+include/
+pyvenv.cfg
+share/
+.Python
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.spec.bak
+
+# Local secrets / runtime config
+mesh_telegram_config.json
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
