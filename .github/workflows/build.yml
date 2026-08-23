@@ -3,8 +3,12 @@ name: Build MeshTelegramBridge
 on:
   push:
     branches: [main, master]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -35,8 +39,45 @@ jobs:
       - name: PyInstaller
         run: pyinstaller mesh_bridge_gui.spec -y
 
+      - name: Prepare release asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          RELEASE_ASSET_NAME: ${{ runner.os == 'Windows' && 'MeshTelegramBridge-Windows.exe' || runner.os == 'macOS' && 'MeshTelegramBridge-macOS' || 'MeshTelegramBridge-Linux' }}
+        run: |
+          python -c "import os, shutil; from pathlib import Path; source = Path('dist') / ('MeshTelegramBridge.exe' if os.name == 'nt' else 'MeshTelegramBridge'); destination = Path('release-assets') / os.environ['RELEASE_ASSET_NAME']; destination.parent.mkdir(exist_ok=True); shutil.copy2(source, destination)"
+
+      - name: Upload release asset for publishing
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-asset-${{ matrix.os }}
+          path: release-assets/*
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: MeshTelegramBridge-${{ matrix.os }}
           path: dist/*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-asset-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
