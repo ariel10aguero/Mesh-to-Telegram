@@ -1,6 +1,6 @@
-# Meshtastic ↔ Telegram bridge
+# Meshtastic ↔ Telegram Group Bridge
 
-Desktop GUI or headless script that forwards Meshtastic text messages to a Telegram group and sends mesh traffic from Telegram using `/todos` (broadcast) and `/!xxxxxxxx` (direct message to an 8-hex node ID).
+This project retransmits Meshtastic text messages to a dedicated Telegram group and sends supported Telegram commands back to the mesh. It includes a desktop GUI and a headless script. Use `/todos` for broadcasts and `/!xxxxxxxx` for a direct message to an 8-hex node ID.
 
 ## Run the GUI
 
