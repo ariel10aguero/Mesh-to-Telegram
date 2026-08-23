@@ -68,3 +68,12 @@ The workflow `.github/workflows/build.yml` builds on Ubuntu, Windows, and macOS 
 - `/!9ee852b8 your message` — DM node `!9ee852b8` (8 hex digits; `/9ee852b8` without `!` is also accepted).
 
 Plain text without these commands is not sent to the mesh (help text is sent in Telegram instead).
+
+## Telegram setup
+
+1. Open [@BotFather](https://t.me/BotFather) in Telegram, run `/newbot`, and copy the bot token it provides. Keep the token private.
+2. Create one dedicated Telegram group for this bridge, for example **Meshtastic Bridge**, and add the bot to it. Use this group as the single destination for retransmitting mesh messages; do not use a personal chat or a general-purpose group.
+3. Obtain the group's numeric chat ID and set it as `telegram_chat_id` in `mesh_telegram_config.json` or as `MESH_TELEGRAM_CHAT_ID`. Group IDs normally start with `-100`; the value in `mesh_telegram_config.example.json` is only a placeholder.
+4. Start the bridge. Messages received from Meshtastic are forwarded to the configured group, while `/todos ...` and `/!xxxxxxxx ...` commands posted in that group are sent to the mesh.
+
+![Meshtastic Telegram bridge](mesh-telegram.png)
