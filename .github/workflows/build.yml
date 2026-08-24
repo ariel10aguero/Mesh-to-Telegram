@@ -47,7 +47,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          if [[ "$GITHUB_REF_TYPE" != "tag" ]]; then VERSION="0.0.${GITHUB_RUN_NUMBER}"; fi
+          VERSION="${VERSION#.}"
+          if [[ "$GITHUB_REF_TYPE" != "tag" || ! "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then VERSION="0.0.${GITHUB_RUN_NUMBER}"; fi
           mkdir -p package-root/DEBIAN package-root/usr/bin package-root/usr/share/applications package-root/usr/share/icons/hicolor/256x256/apps release-assets
           cp dist/MeshTelegramBridge package-root/usr/bin/mesh-telegram-bridge
           chmod 755 package-root/usr/bin/mesh-telegram-bridge
@@ -80,7 +81,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force release-assets | Out-Null
           New-Item -ItemType Directory -Force wix-build | Out-Null
-          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -match '^v([0-9]+(\.[0-9]+){0,2})$') {
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -match '^v\.?([0-9]+(\.[0-9]+){0,2})$') {
             $version = $Matches[1]
             $parts = $version.Split('.')
             while ($parts.Count -lt 3) { $version += '.0'; $parts = $version.Split('.') }
