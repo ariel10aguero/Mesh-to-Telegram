@@ -60,7 +60,22 @@ If PyInstaller reports that **tkinter** is missing, fix your Python installation
 
 ## GitHub Actions
 
-The workflow `.github/workflows/build.yml` builds on Ubuntu, Windows, and macOS and uploads `dist/` as artifacts. Use Python 3.12 in CI for predictable Tk and wheel support.
+The workflow `.github/workflows/build.yml` builds on Ubuntu, Windows, and macOS and uploads the native packages as artifacts:
+
+- Ubuntu: `MeshTelegramBridge-Linux.deb`
+- Windows: `MeshTelegramBridge-Windows.msi`
+- macOS: `MeshTelegramBridge-macOS.dmg`
+
+Use Python 3.12 in CI for predictable Tk and wheel support.
+
+To publish those builds as GitHub Release assets, push a version tag beginning with `v`:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The release job is skipped for branch pushes, pull requests, and manual workflow runs. Those runs only produce Actions artifacts. The tag push runs the release asset steps and creates the GitHub Release automatically.
 
 ## Telegram usage
 

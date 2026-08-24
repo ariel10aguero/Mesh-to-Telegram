@@ -39,18 +39,77 @@ jobs:
       - name: PyInstaller
         run: pyinstaller mesh_bridge_gui.spec -y
 
-      - name: Prepare release asset
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          RELEASE_ASSET_NAME: ${{ runner.os == 'Windows' && 'MeshTelegramBridge-Windows.exe' || runner.os == 'macOS' && 'MeshTelegramBridge-macOS' || 'MeshTelegramBridge-Linux' }}
+      - name: Install WiX Toolset
+        if: runner.os == 'Windows'
+        run: choco install wixtoolset --no-progress -y
+
+      - name: Package Linux DEB
+        if: runner.os == 'Linux'
         run: |
-          python -c "import os, shutil; from pathlib import Path; source = Path('dist') / ('MeshTelegramBridge.exe' if os.name == 'nt' else 'MeshTelegramBridge'); destination = Path('release-assets') / os.environ['RELEASE_ASSET_NAME']; destination.parent.mkdir(exist_ok=True); shutil.copy2(source, destination)"
+          mkdir -p package-root/DEBIAN package-root/usr/bin release-assets
+          cp dist/MeshTelegramBridge package-root/usr/bin/mesh-telegram-bridge
+          chmod 755 package-root/usr/bin/mesh-telegram-bridge
+          printf '%s\n' \
+            'Package: mesh-telegram-bridge' \
+            'Version: 1.0.0' \
+            'Section: net' \
+            'Priority: optional' \
+            'Architecture: amd64' \
+            'Maintainer: MeshTelegramBridge contributors' \
+            'Description: Meshtastic to Telegram bridge' \
+            ' Desktop bridge between Meshtastic and Telegram.' \
+            > package-root/DEBIAN/control
+          dpkg-deb --build --root-owner-group package-root release-assets/MeshTelegramBridge-Linux.deb
+
+      - name: Package Windows MSI
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          @"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+            <Product Id="*" Name="MeshTelegramBridge" Language="1033" Version="1.0.0" Manufacturer="MeshTelegramBridge contributors" UpgradeCode="9D8B2E1F-5D1F-4D43-9EF8-B7B3C3D2B1A0">
+              <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+              <MediaTemplate />
+              <Directory Id="TARGETDIR" Name="SourceDir">
+                <Directory Id="ProgramFilesFolder">
+                  <Directory Id="INSTALLFOLDER" Name="MeshTelegramBridge">
+                    <Component Id="MainExecutable" Guid="*">
+                      <File Id="MeshTelegramBridgeExe" Source="dist\MeshTelegramBridge.exe" KeyPath="yes" />
+                    </Component>
+                  </Directory>
+                </Directory>
+              </Directory>
+              <Feature Id="ProductFeature" Title="MeshTelegramBridge" Level="1">
+                <ComponentRef Id="MainExecutable" />
+              </Feature>
+            </Product>
+          </Wix>
+          "@ | Set-Content -Encoding UTF8 package.wxs
+          candle.exe package.wxs -o package.wixobj
+          light.exe package.wixobj -o release-assets\MeshTelegramBridge-Windows.msi
+
+      - name: Package macOS DMG
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p dmg-root release-assets
+          cp dist/MeshTelegramBridge dmg-root/MeshTelegramBridge
+          chmod 755 dmg-root/MeshTelegramBridge
+          ln -s /Applications dmg-root/Applications
+          hdiutil create -volname MeshTelegramBridge -srcfolder dmg-root -ov -format UDZO release-assets/MeshTelegramBridge-macOS.dmg
 
       - name: Upload release asset for publishing
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: release-asset-${{ matrix.os }}
+          path: release-assets/*
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeshTelegramBridge-package-${{ matrix.os }}
           path: release-assets/*
 
       - name: Upload artifact
