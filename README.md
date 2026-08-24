@@ -64,7 +64,7 @@ The workflow `.github/workflows/build.yml` builds on Ubuntu, Windows, and macOS 
 
 - Ubuntu: `MeshTelegramBridge-Linux.deb`
 - Windows: `MeshTelegramBridge-Windows.msi`
-- macOS: `MeshTelegramBridge-macOS.dmg`
+- macOS: `MeshTelegramBridge-macOS.dmg` containing `MeshTelegramBridge.app`
 
 Use Python 3.12 in CI for predictable Tk and wheel support.
 

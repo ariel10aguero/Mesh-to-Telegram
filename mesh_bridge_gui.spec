@@ -1,7 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec for mesh_bridge_gui (tkinter + meshtastic + telebot)."""
 
+import sys
+
 from PyInstaller.utils.hooks import collect_all
+
+if sys.platform == "darwin":
+    from PyInstaller.building.osx import BUNDLE
 
 datas, binaries, hiddenimports = collect_all("meshtastic")
 
@@ -46,3 +51,10 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+
+if sys.platform == "darwin":
+    app = BUNDLE(
+        exe,
+        name="MeshTelegramBridge.app",
+        bundle_identifier="com.meshtelegrambridge.app",
+    )

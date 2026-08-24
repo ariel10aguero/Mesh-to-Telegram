@@ -46,12 +46,25 @@ jobs:
       - name: Package Linux DEB
         if: runner.os == 'Linux'
         run: |
-          mkdir -p package-root/DEBIAN package-root/usr/bin release-assets
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ "$GITHUB_REF_TYPE" != "tag" ]]; then VERSION="0.0.${GITHUB_RUN_NUMBER}"; fi
+          mkdir -p package-root/DEBIAN package-root/usr/bin package-root/usr/share/applications package-root/usr/share/icons/hicolor/256x256/apps release-assets
           cp dist/MeshTelegramBridge package-root/usr/bin/mesh-telegram-bridge
           chmod 755 package-root/usr/bin/mesh-telegram-bridge
+          cp mesh-telegram.png package-root/usr/share/icons/hicolor/256x256/apps/mesh-telegram-bridge.png
+          printf '%s\n' \
+            '[Desktop Entry]' \
+            'Type=Application' \
+            'Name=MeshTelegramBridge' \
+            'Comment=Meshtastic to Telegram bridge' \
+            'Exec=/usr/bin/mesh-telegram-bridge' \
+            'Icon=mesh-telegram-bridge' \
+            'Terminal=false' \
+            'Categories=Network;Chat;' \
+            > package-root/usr/share/applications/mesh-telegram-bridge.desktop
           printf '%s\n' \
             'Package: mesh-telegram-bridge' \
-            'Version: 1.0.0' \
+            "Version: $VERSION" \
             'Section: net' \
             'Priority: optional' \
             'Architecture: amd64' \
@@ -66,12 +79,20 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force release-assets | Out-Null
+          New-Item -ItemType Directory -Force wix-build | Out-Null
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -match '^v([0-9]+(\.[0-9]+){0,2})$') {
+            $version = $Matches[1]
+            $parts = $version.Split('.')
+            while ($parts.Count -lt 3) { $version += '.0'; $parts = $version.Split('.') }
+          } else {
+            $version = "0.0.$env:GITHUB_RUN_NUMBER"
+          }
           @"
           <?xml version="1.0" encoding="UTF-8"?>
           <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-            <Product Id="*" Name="MeshTelegramBridge" Language="1033" Version="1.0.0" Manufacturer="MeshTelegramBridge contributors" UpgradeCode="9D8B2E1F-5D1F-4D43-9EF8-B7B3C3D2B1A0">
+            <Product Id="*" Name="MeshTelegramBridge" Language="1033" Version="$version" Manufacturer="MeshTelegramBridge contributors" UpgradeCode="9D8B2E1F-5D1F-4D43-9EF8-B7B3C3D2B1A0">
               <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
-              <MediaTemplate />
+              <MediaTemplate EmbedCab="yes" />
               <Directory Id="TARGETDIR" Name="SourceDir">
                 <Directory Id="ProgramFilesFolder">
                   <Directory Id="INSTALLFOLDER" Name="MeshTelegramBridge">
@@ -87,15 +108,15 @@ jobs:
             </Product>
           </Wix>
           "@ | Set-Content -Encoding UTF8 package.wxs
-          candle.exe package.wxs -o package.wixobj
-          light.exe package.wixobj -o release-assets\MeshTelegramBridge-Windows.msi
+          candle.exe package.wxs -o wix-build\package.wixobj
+          light.exe wix-build\package.wixobj -pdbout wix-build\package.wixpdb -o release-assets\MeshTelegramBridge-Windows.msi
+          Remove-Item package.wxs
 
       - name: Package macOS DMG
         if: runner.os == 'macOS'
         run: |
           mkdir -p dmg-root release-assets
-          cp dist/MeshTelegramBridge dmg-root/MeshTelegramBridge
-          chmod 755 dmg-root/MeshTelegramBridge
+          cp -R dist/MeshTelegramBridge.app dmg-root/MeshTelegramBridge.app
           ln -s /Applications dmg-root/Applications
           hdiutil create -volname MeshTelegramBridge -srcfolder dmg-root -ov -format UDZO release-assets/MeshTelegramBridge-macOS.dmg
 
